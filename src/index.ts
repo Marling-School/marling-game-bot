@@ -18,23 +18,10 @@ client.on('ready', () => {
 });
 
 const SIGNAL = '>'
-type PendingHandler = (msg: Message) => boolean;
-let pendingHandler: PendingHandler | undefined;
 
 client.on('message', msg => {
     if (msg.author.bot) return;
-
-    if (!msg.content.startsWith(SIGNAL)) {
-        // If we are waiting for a response to something
-        if (!!pendingHandler) {
-            // If this message satisfies that response
-            if (pendingHandler(msg)) {
-                // We can remove the pending handler
-                pendingHandler = undefined;
-            }
-        }
-        return
-    }
+    if (!msg.content.startsWith(SIGNAL)) return;
 
     const message = msg.content.slice(1);
     const parts = message.split(' ');
@@ -46,25 +33,25 @@ client.on('message', msg => {
 
                 const a = 1 + Math.floor(Math.random() * 10);
                 const b = 1 + Math.floor(Math.random() * 10);
-                const question = `What is ${a} * ${b}?`
+                const question = `${msg.author.username} - What is ${a} * ${b}?`
                 const answer = (a * b).toString();
-                msg.channel.send(question);
-                pendingHandler = (response: Message) => {
-                    if (response.channel.id === msg.channel.id) {
-                        if (response.content === answer) {
-                            response.channel.send('Correct!')
-                        } else {
-                            response.channel.send('Incorrect :(')
-                        }
 
-                        return true;
+                const filter = (m: Message) => m.author.id === msg.author.id;
+                const collector = msg.channel.createMessageCollector(filter, { max: 1 });
+                collector.on('collect', (m: Message) => {
+                    if (m.content === answer) {
+                        m.channel.send(`${m.author.username} is Correct!`)
+                    } else {
+                        m.channel.send(`${m.author.username} is Incorrect!`)
                     }
 
-                    return false;
-                }
-
+                    return true;
+                });
+                collector.on('end', collected => {
+                    logger.info(`Collected ${collected.size} items`);
+                });
+                msg.channel.send(question);
                 break;
-
         }
 
     } else {
