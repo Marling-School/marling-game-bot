@@ -11,7 +11,6 @@ const guessNumber: MessageHandler = async (msg: Message, content: string, splitO
     let guess = 50;
     let min = 1;
     let max = 100;
-    let finished = false;
 
     const guessMessage: Message = await msg.channel.send(`Is your number ${guess}?`);
     [LEFT_ARROW, CHECK_MARK, RIGHT_ARROW].forEach(async e => await guessMessage.react(e));
@@ -20,37 +19,35 @@ const guessNumber: MessageHandler = async (msg: Message, content: string, splitO
         return [LEFT_ARROW, CHECK_MARK, RIGHT_ARROW].includes(reaction.emoji.name) && user.id === msg.author.id;
     };
 
-    // const guessMessage: Message = await msg.channel.send(`Is your number ${guess}?`);
-    while (!finished) {
-        try {
-            const collected = await guessMessage.awaitReactions(filter, { max: 1, time: 10000, errors: ['time'] })
+    const collector = guessMessage.createReactionCollector(filter, { time: 15000 });
 
-            collected.forEach((reaction: MessageReaction) => {
-                logger.info('Saw ' + reaction.emoji.name);
-                reaction.users.remove(msg.author.id);
-                // guessMessage.reactions.removeAll();
-                switch (reaction.emoji.name) {
-                    case CHECK_MARK:
-                        msg.channel.send('I win!');
-                        finished = true;
-                        break;
-                    case LEFT_ARROW:
-                        max = guess - 1;
-                        guess = guess - Math.floor((guess - min) / 2);
-                        guessMessage.edit(`Is your number ${guess}?`);
-                        break;
-                    case RIGHT_ARROW:
-                        min = guess + 1;
-                        guess = guess + Math.floor((max - guess) / 2);
-                        guessMessage.edit(`Is your number ${guess}?`);
-                        break;
-                }
-            });
-        } catch (e) {
-            logger.warn('Something went wrong observing reactions: ' + e);
-            finished = true;
+    collector.on('collect', (reaction, user) => {
+        logger.info(`Collected ${reaction.emoji.name} from ${user.tag}`);
+
+        // Remove this new reaction
+        reaction.users.remove(msg.author.id);
+
+        switch (reaction.emoji.name) {
+            case CHECK_MARK:
+                msg.channel.send('I win!');
+                collector.stop();
+                break;
+            case LEFT_ARROW:
+                max = guess - 1;
+                guess = guess - Math.floor((guess - min) / 2);
+                guessMessage.edit(`Is your number ${guess}?`);
+                break;
+            case RIGHT_ARROW:
+                min = guess + 1;
+                guess = guess + Math.floor((max - guess) / 2);
+                guessMessage.edit(`Is your number ${guess}?`);
+                break;
         }
-    }
+    });
+
+    collector.on('end', collected => {
+        msg.channel.send(`Finished playing with ${msg.author.username}`)
+    });
 }
 
 export default guessNumber;
