@@ -14,7 +14,9 @@ connectDb();
 // Configure the logger
 logger.configure({
     level: "debug",
-    transports: [new logger.transports.Console()],
+    transports: [new logger.transports.Console({
+        format: logger.format.simple(),
+    })],
 });
 
 const client = new Client()
