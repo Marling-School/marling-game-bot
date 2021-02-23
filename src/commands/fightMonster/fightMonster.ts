@@ -4,26 +4,37 @@ import {Command} from "../types";
 
 import {IPlayerDoc, Player} from "../../db/model/player";
 import Fight, {FightStatus} from "./Fight";
+import winston from "winston";
 
 export const Emoji = {
     controller: '🎮',
     heart: '❤️',
     crossedSwords: '⚔️',
     shield: '🛡️',
-    flee: '🏃‍♂️'
+    flee: '🏃‍♂️',
+    j: '🇯'
 }
 
-const ACTION_EMOJIS = [Emoji.crossedSwords, Emoji.shield, Emoji.flee];
+const logger = winston.createLogger()
 
-function createFightEmbed({ player, monster, events }: Fight): MessageEmbed {
-    return new MessageEmbed()
+
+const ACTION_EMOJIS = [Emoji.crossedSwords, Emoji.shield, Emoji.flee, Emoji.j];
+
+function createFightEmbed({players, monster, events}: Fight): MessageEmbed {
+    const embed = new MessageEmbed()
         .setColor('#0099ff')
-        .setTitle(`Adventurer ${player.name} :crossed_swords:`)
+        .setTitle(`Fight} :crossed_swords:`)
         .setDescription(`Fighting a ${monster.name}`)
-        .addField(player.name, `${Emoji.heart}:${player.health}, ${Emoji.controller}: ${player.xp}`)
-        .addField(monster.name, `${Emoji.heart}: ${monster.health}, ${Emoji.crossedSwords}: ${monster.strikeProbability * 100}%`)
+
+    players.forEach(player => {
+        embed.addField(player.name, `${Emoji.heart}:${player.health}, ${Emoji.controller}: ${player.xp}`)
+    })
+
+    embed.addField(monster.name, `${Emoji.heart}: ${monster.health}, ${Emoji.crossedSwords}: ${monster.strikeProbability * 100}%`)
         .addField('Events', events.join('\n'))
         .setTimestamp();
+
+    return embed
 }
 
 const fightMonster: Command = {
@@ -31,37 +42,49 @@ const fightMonster: Command = {
     aliases: ["fightMonster"],
     run: async (msg: Message, content: string, splitOnSpace: string[]) => {
         // Find the player in the database
-        const player: IPlayerDoc | null = await Player.findById(msg.author.id);
-        if (!player) {
+        const firstPlayer: IPlayerDoc | null = await Player.findById(msg.author.id);
+        if (!firstPlayer) {
             msg.channel.send('Player Not Found');
             return;
         }
 
-        const fight = new Fight(player);
+        const fight = new Fight(firstPlayer);
 
         const fightMessage: Message = await msg.channel.send(createFightEmbed(fight));
         ACTION_EMOJIS.forEach(async r => await fightMessage.react(r));
 
         // Watch the reactions
         const filter = (reaction: MessageReaction, user: User) => {
-            return ACTION_EMOJIS.includes(reaction.emoji.name) && user.id === msg.author.id;
+            return ACTION_EMOJIS.includes(reaction.emoji.name);
         };
 
-        const collector = fightMessage.createReactionCollector(filter, { time: 150000 });
+        const collector = fightMessage.createReactionCollector(filter, {time: 150000});
 
-        collector.on('collect', (reaction: MessageReaction, user: User) => {
-            reaction.users.remove(user.id);
+        collector.on('collect', async (reaction: MessageReaction, user: User) => {
+            const player: IPlayerDoc | null = await Player.findById(user.id);
+
+            if (user.bot) return
+
+            if (!player) {
+                await msg.channel.send("No player found")
+                return
+            }
+
+            await reaction.users.remove(user.id);
 
             switch (reaction.emoji.name) {
                 case Emoji.crossedSwords:
-                    fight.attack();
+                    fight.attack(player);
                     break;
                 case Emoji.flee:
-                    fight.flee();
+                    fight.flee(player);
                     break;
                 case Emoji.shield:
-                    fight.defend();
+                    fight.defend(player);
                     break;
+                case Emoji.j:
+                    fight.join(player)
+                    break
             }
 
             switch (fight.getOutcome()) {
@@ -84,7 +107,9 @@ const fightMonster: Command = {
         });
         collector.on('end', collected => {
             fightMessage.reactions.removeAll();
-            player.save();
+            fight.players.forEach(player => {
+                player.save()
+            })
         });
     }
 }
