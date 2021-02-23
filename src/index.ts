@@ -6,6 +6,7 @@ import commands from './commands';
 import {connectDb} from "./db/mongoose";
 import BotEnabled from './commands/botEnabled';
 import autoCreatePlayer from './commands/autoCreatePlayer';
+import help from "./commands/help";
 
 // Load environment variables
 dotenv.config();
@@ -55,6 +56,12 @@ client.on('message', (msg: Message) => {
                 return
             }
         })
+
+        // Manual check for help command to avoid cyclic import
+        if (parts[0].toLocaleLowerCase() === "help") {
+            help.run(msg, msg.content, parts)
+            return;
+        }
 
         if (!found) {
             msg.channel.send(`Could not find handler for command ${parts[0]}`)
