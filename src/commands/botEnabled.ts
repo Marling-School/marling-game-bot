@@ -26,14 +26,15 @@ export default class BotEnabled {
                     this.enabled = !this.enabled;
                     msg.channel.send(`Bot ${this.uniqueId} is now ${this.enabled ? 'Enabled' : 'Disabled'}`)
 
-                    // Return false, since we don't need to contine processig this command
+                    // Return false, since we don't want to continue processing this command
                     return !this.enabled;
                 }
                 break;
             }
             case 'Display': {
                 msg.channel.send(`This bots unique ID is ${this.uniqueId}, started at ${this.startTime}`)
-                break;
+                // Return false, since we don't want to continue processing this command
+                return false;
             }
         }
 
