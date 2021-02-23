@@ -1,10 +1,9 @@
 import * as logger from 'winston'
-import { Client, Message } from 'discord.js';
+import {Client, Message} from 'discord.js';
 import dotenv from 'dotenv'
 
 import commands from './commands';
-import { MessageHandler } from './commands/types'
-import { connectDb } from "./db/mongoose";
+import {connectDb} from "./db/mongoose";
 import BotEnabled from './commands/botEnabled';
 import autoCreatePlayer from './commands/autoCreatePlayer';
 
@@ -47,11 +46,17 @@ client.on('message', (msg: Message) => {
     autoCreatePlayer(msg);
 
     if (parts.length > 0) {
-        const commandHandler: MessageHandler = commands[parts[0]];
+        let found = false
 
-        if (!!commandHandler) {
-            commandHandler(msg, message, parts);
-        } else {
+        commands.forEach(command => {
+            if (command.aliases.includes(parts[0])) {
+                command.run(msg, msg.content, parts)
+                found = true
+                return
+            }
+        })
+
+        if (!found) {
             msg.channel.send(`Could not find handler for command ${parts[0]}`)
         }
 
