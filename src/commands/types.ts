@@ -7,3 +7,5 @@ export interface Command {
 }
 
 export type Commands = Command[]
+
+export type Optional<T> = T | undefined;
