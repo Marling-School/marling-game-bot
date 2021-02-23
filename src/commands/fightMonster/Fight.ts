@@ -76,7 +76,7 @@ export default class Fight {
 
     attack() {
         this.playerDefence = PlayerDefense.attacking;
-        const damage = (ATTACK_DAMAGE - Math.floor(10 * this.monster.strikeProbability));
+        const damage = (ATTACK_DAMAGE + Math.ceil(this.monster.strikeProbability * 10));
         this.monster.health -= damage;
         this.addEvent(`Player Attacks doing ${damage} damage`);
         this.anyTurn();

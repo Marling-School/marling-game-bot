@@ -6,27 +6,24 @@ import { MessageHandler } from "../types";
 import { IPlayerDoc, Player } from "../../db/model/player";
 import Fight, { FightStatus } from "./Fight";
 
-const CROSSED_SWORDS: string = '⚔️';
-const SHIELD: string = '🛡️';
-const FLEE: string = '🏃‍♂️';
-const ACTION_EMOJIS = [CROSSED_SWORDS, SHIELD, FLEE];
+export const Emoji = {
+    controller: '🎮',
+    heart: '❤️',
+    crossedSwords: '⚔️',
+    shield: '🛡️',
+    flee: '🏃‍♂️'
+}
+
+const ACTION_EMOJIS = [Emoji.crossedSwords, Emoji.shield, Emoji.flee];
 
 function createFightEmbed({ player, monster, events }: Fight): MessageEmbed {
     const embed = new MessageEmbed()
         .setColor('#0099ff')
         .setTitle(`Adventurer ${player.name} :crossed_swords:`)
-        .setDescription('Fight Status')
-        .addFields(
-            { name: 'XP', value: `${player.xp} 🎮`, inline: true },
-            { name: 'Health', value: `${player.health} ❤️`, inline: true },
-        )
-        .addField('\u200B', '\u200B')
-        .addFields(
-            { name: 'Monster', value: monster.name, inline: true },
-            { name: 'Health', value: `${monster.health} ❤️`, inline: true },
-            { name: 'Strike Chance', value: `${monster.strikeProbability * 100}%`, inline: true },
-        )
-        .addField('Outcome', events.join('\n'))
+        .setDescription(`Fighting a ${monster.name}`)
+        .addField(player.name, `${Emoji.heart}:${player.health}, ${Emoji.controller}: ${player.xp}`)
+        .addField(monster.name, `${Emoji.heart}: ${monster.health}, ${Emoji.crossedSwords}: ${monster.strikeProbability * 100}%`)
+        .addField('Events', events.join('\n'))
         .setTimestamp();
 
     return embed;
@@ -56,13 +53,13 @@ const fightMonster: MessageHandler = async (msg: Message, content: string, split
         reaction.users.remove(user.id);
 
         switch (reaction.emoji.name) {
-            case CROSSED_SWORDS:
+            case Emoji.crossedSwords:
                 fight.attack();
                 break;
-            case FLEE:
+            case Emoji.flee:
                 fight.flee();
                 break;
-            case SHIELD:
+            case Emoji.shield:
                 fight.defend();
                 break;
         }
