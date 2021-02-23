@@ -1,6 +1,11 @@
 import Discord from "discord.js";
 
-export type MessageHandler = (msg: Discord.Message, content: string, splitOnSpace: string[]) => void;
-export interface MessageHandlers {
-    [s: string]: MessageHandler;
+export interface Command {
+    aliases: string[]
+    description: string
+    run: (msg: Discord.Message, content: string, splitOnSpace: string[]) => void
 }
+
+export type Commands = Command[]
+
+export type Optional<T> = T | undefined;

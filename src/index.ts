@@ -3,10 +3,11 @@ import { Client, Message } from 'discord.js';
 import dotenv from 'dotenv'
 
 import commands from './commands';
-import { MessageHandler } from './commands/types'
 import { connectDb } from "./db/mongoose";
 import BotEnabled from './commands/botEnabled';
 import autoCreatePlayer from './commands/autoCreatePlayer';
+import help from "./commands/help";
+import { Command, Optional } from './commands/types';
 
 // Load environment variables
 dotenv.config();
@@ -47,13 +48,20 @@ client.on('message', (msg: Message) => {
     autoCreatePlayer(msg);
 
     if (parts.length > 0) {
-        const commandHandler: MessageHandler = commands[parts[0]];
-
-        if (!!commandHandler) {
-            commandHandler(msg, message, parts);
-        } else {
-            msg.channel.send(`Could not find handler for command ${parts[0]}`)
+        // Manual check for help command to avoid cyclic import
+        if (parts[0].toLocaleLowerCase() === "help") {
+            help.run(msg, msg.content, parts)
+            return;
         }
+
+        const command: Optional<Command> = commands.find(c => c.aliases.includes(parts[0]));
+
+        if (!command) {
+            msg.channel.send(`Could not find handler for command ${parts[0]}`);
+            return;
+        }
+
+        command.run(msg, msg.content, parts)
 
     } else {
         msg.channel.send('Error - Not enough parts when split on space');
