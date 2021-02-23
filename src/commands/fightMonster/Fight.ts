@@ -1,6 +1,6 @@
-import { timeStamp } from "console";
-import { IPlayerDoc } from "../../db/model/player";
-import { choose, takeChance } from "../../utils";
+import {IPlayerDoc} from "../../db/model/player";
+import {choose, takeChance} from "../../utils";
+import winston from "winston";
 
 export interface IMonster {
     name: string;
@@ -27,16 +27,18 @@ const INITIAL_MONSTER_HEALTH = 20;
 const MAX_EVENTS_LENGTH = 6;
 
 export default class Fight {
-    player: IPlayerDoc;
-    playerDefence: number;
+    players: IPlayerDoc[];
+    playerDefence: number; // TODO: Remove this by generating defense at runtime based off stats
     monster: IMonster;
     events: string[];
     turnNumber: number;
     eventNumber: number;
     hasFled: boolean;
+    waitingFor: string[]
 
     constructor(player: IPlayerDoc) {
-        this.player = player;
+        this.players = [player];
+        this.waitingFor = [player._id]
         this.playerDefence = PlayerDefense.defending;
         this.monster = {
             name: choose(['Goblin', 'Mantis', 'Serpent', 'Tarantula']),
@@ -65,50 +67,102 @@ export default class Fight {
         const monsterAttacks = takeChance(this.monster.strikeProbability);
         if (monsterAttacks && this.monster.health > 0) {
             this.monster.strikeProbability = INITIAL_STRIKE_PROBABILITY;
+
+            const player = choose(this.players)
             const damage = (ATTACK_DAMAGE - this.playerDefence);
-            this.player.health -= damage;
-            this.addEvent(`Monster Attacks doing ${damage} damage`)
+            player.health -= damage
+
+            this.addEvent(`Monster attacks ${player.name} doing ${damage} damage`)
         }
+
+        this.waitingFor = this.players.map(player => player._id)
 
         this.turnNumber += 1;
         this.eventNumber = 1;
     }
 
-    attack() {
-        this.playerDefence = PlayerDefense.attacking;
-        const damage = (ATTACK_DAMAGE + Math.ceil(this.monster.strikeProbability * 10));
-        this.monster.health -= damage;
-        this.addEvent(`Player Attacks doing ${damage} damage`);
-        this.anyTurn();
+    attack(player: IPlayerDoc) {
+        if (this.playerJoined(player) && this.waitingFor.includes(player._id)) {
+            const idx = this.waitingFor.indexOf(player._id)
+            this.waitingFor.splice(idx, 1)
+
+            this.playerDefence = PlayerDefense.attacking;
+            const damage = (ATTACK_DAMAGE + Math.ceil(this.monster.strikeProbability * 10));
+            this.monster.health -= damage;
+            this.addEvent(`${player.name} Attacks doing ${damage} damage. Waiting For ${this.waitingFor.length} Players`);
+
+            if (this.waitingFor.length === 0) {
+                this.anyTurn();
+            }
+        }
     }
 
-    defend() {
-        this.addEvent('Player Defends');
-        this.playerDefence = PlayerDefense.defending;
-        this.anyTurn();
+    defend(player: IPlayerDoc) {
+        if (this.playerJoined(player) && this.waitingFor.includes(player._id)) {
+            const idx = this.waitingFor.indexOf(player._id)
+            this.waitingFor.splice(idx, 1)
+
+            this.addEvent(`${player.name} Defends. Waiting For ${this.waitingFor.length} Players`);
+            this.playerDefence = PlayerDefense.defending;
+
+
+            if (this.waitingFor.length === 0) {
+                this.anyTurn();
+            }
+        }
     }
 
-    flee() {
-        this.addEvent('Player Flees');
-        this.hasFled = true;
-        this.anyTurn();
+    flee(player: IPlayerDoc) {
+        this.removePlayer(player)
+
+        const idx = this.waitingFor.indexOf(player._id)
+        this.waitingFor.splice(idx, 1)
+
+        this.addEvent(`${player.name} Flees. Waiting For ${this.waitingFor.length} Players`);
+
+        if (this.waitingFor.length === 0) {
+            this.anyTurn();
+        }
     }
+
+    join(player: IPlayerDoc) {
+        if (!this.playerJoined(player)) {
+            this.players.push(player)
+            this.addEvent(`${player.name} has joined the battle`)
+            this.waitingFor.push(player._id)
+        }
+    }
+
 
     getOutcome(): FightStatus {
-        if (this.player.health <= 0) {
-            this.addEvent(`Monster Kills ${this.player.name}, Player Respawns with ${PLAYER_RESPAWN_HEALTH} HP`);
-            this.player.health = PLAYER_RESPAWN_HEALTH; // Reset to a low amount (respawn)
-            return FightStatus.PlayerWon;
+        const alivePlayers = this.players.filter(player => player.health > 0)
+
+        if (alivePlayers.length === 0) {
+            this.addEvent(`Monster has won by killing all players, Player Respawns with ${PLAYER_RESPAWN_HEALTH} HP`);
+            this.players.forEach(player => player.health = PLAYER_RESPAWN_HEALTH)
+            return FightStatus.MonsterWon;
         } else if (this.monster.health <= 0) {
             this.monster.health = 0;
             const xp = (10 * this.turnNumber);
-            this.player.xp += xp;
-            this.addEvent(`${this.player.name} Kills Monster gaining ${xp} XP`);
-            return FightStatus.MonsterWon;
+            this.players.forEach(player => player.xp += xp);
+            this.addEvent(`The Players have Killed the Monster gaining ${xp} XP each`);
+            return FightStatus.PlayerWon;
         } else if (this.hasFled) {
             return FightStatus.PlayerFlee;
         }
 
         return FightStatus.Running;
+    }
+
+    playerJoined(player: IPlayerDoc): boolean {
+        return this.players.filter(p => p._id === player._id).length !== 0
+    }
+
+    removePlayer(player: IPlayerDoc) {
+        this.players.forEach((p, i) => {
+            if (p._id === player._id) {
+                this.players.splice(i, 1)
+            }
+        })
     }
 }
