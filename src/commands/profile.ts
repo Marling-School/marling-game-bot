@@ -19,8 +19,10 @@ const profile: Command = {
             .setTitle(`Adventurer ${player.name} :crossed_swords:`)
             .setDescription('Your Profile')
             .addFields(
-                {name: 'Health', value: `${player.health} ❤️`, inline: true},
-                {name: 'XP', value: `${player.xp} 🎮`, inline: true},
+                {name: '❤️ Health', value:` ${player.health}`, inline: true},
+                {name: '🎮 XP', value: `${player.xp} `, inline: true},
+                {name: '🏆 Fights Won', value: `${player.fightsWon} `, inline: true},
+                {name: '☠️ Fights Lost', value: `${player.fightsLost} `, inline: true},
             )
             .setTimestamp();
 

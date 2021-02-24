@@ -5,6 +5,9 @@ export interface IPlayer {
   name: string;
   health: number;
   xp: number;
+  fightsWon: number;
+  fightsLost: number;
+  fleeTotal: number;
 }
 
 export type IPlayerDoc = Document & IPlayer;
@@ -21,6 +24,15 @@ const PlayerSchema: Schema = new Schema(
       type: Number
     },
     xp: {
+      type: Number
+    },
+    fightsWon: {
+      type: Number
+    },
+    fightsLost: {
+      type: Number
+    },
+    fleeTotal: {
       type: Number
     }
   },
