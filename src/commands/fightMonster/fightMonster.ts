@@ -1,9 +1,9 @@
-import {Message, MessageEmbed, MessageReaction, User} from "discord.js";
+import { Message, MessageEmbed, MessageReaction, User } from "discord.js";
 
-import {Command} from "../types";
+import { Command } from "../types";
 
-import {IPlayerDoc, Player} from "../../db/model/player";
-import Fight, {FightStatus} from "./Fight";
+import { IPlayerDoc, Player } from "../../db/model/player";
+import Fight, { FightStatus } from "./Fight";
 import winston from "winston";
 
 export const Emoji = {
@@ -20,7 +20,7 @@ const logger = winston.createLogger()
 
 const ACTION_EMOJIS = [Emoji.crossedSwords, Emoji.shield, Emoji.flee, Emoji.j];
 
-function createFightEmbed({players, monster, events}: Fight): MessageEmbed {
+function createFightEmbed({ players, monster, events }: Fight): MessageEmbed {
     const embed = new MessageEmbed()
         .setColor('#0099ff')
         .setTitle(`Fight} :crossed_swords:`)
@@ -40,14 +40,7 @@ function createFightEmbed({players, monster, events}: Fight): MessageEmbed {
 const fightMonster: Command = {
     description: "Fight a Monster",
     aliases: ["fightMonster"],
-    run: async (msg: Message, content: string, splitOnSpace: string[]) => {
-        // Find the player in the database
-        const firstPlayer: IPlayerDoc | null = await Player.findById(msg.author.id);
-        if (!firstPlayer) {
-            msg.channel.send('Player Not Found');
-            return;
-        }
-
+    run: async (firstPlayer: IPlayerDoc, msg: Message, content: string, splitOnSpace: string[]) => {
         const fight = new Fight(firstPlayer);
 
         const fightMessage: Message = await msg.channel.send(createFightEmbed(fight));
@@ -58,7 +51,7 @@ const fightMonster: Command = {
             return ACTION_EMOJIS.includes(reaction.emoji.name);
         };
 
-        const collector = fightMessage.createReactionCollector(filter, {time: 150000});
+        const collector = fightMessage.createReactionCollector(filter, { time: 150000 });
 
         collector.on('collect', async (reaction: MessageReaction, user: User) => {
             const player: IPlayerDoc | null = await Player.findById(user.id);

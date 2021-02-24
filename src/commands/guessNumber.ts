@@ -1,7 +1,8 @@
 import { Message, MessageReaction, User } from "discord.js";
-import {Command} from "./types";
+import { Command } from "./types";
 
 import * as logger from 'winston';
+import { IPlayerDoc } from "../db/model/player";
 
 const LEFT_ARROW = '⬅️';
 const RIGHT_ARROW = '➡';
@@ -10,7 +11,7 @@ const CHECK_MARK = '☑️';
 const guessNumber: Command = {
     description: "Guess the number game",
     aliases: ["guessNumber"],
-    run: async (msg: Message, content: string, splitOnSpace: string[]) => {
+    run: async (player: IPlayerDoc, msg: Message, content: string, splitOnSpace: string[]) => {
         let guess = 50;
         let min = 1;
         let max = 100;

@@ -3,8 +3,23 @@ import fightMonster from './fightMonster';
 import guessNumber from './guessNumber';
 import addition from './addition';
 import profile from './profile';
-import { Commands } from './types';
+import { Command } from './types';
+import { MessageEmbed } from 'discord.js';
 
-export default [
+
+const commands: Command[] = [
     draw, profile, addition, fightMonster, guessNumber
-] as Commands;
+];
+
+const help: MessageEmbed = new MessageEmbed()
+    .setTitle("Marling Game Bot Help Message")
+    .setColor('#0099ff')
+
+commands.forEach(command => {
+    const aliases = command.aliases.toString().replace(",", ", ")
+    help.addField(aliases, command.description)
+})
+
+export default commands;
+
+export { help };

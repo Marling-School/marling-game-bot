@@ -2,11 +2,12 @@ import { Message } from 'discord.js'
 import { Command } from "./types";
 
 import * as logger from "winston";
+import { IPlayerDoc } from '../db/model/player';
 
 const addition: Command = {
     description: "Maths Game",
     aliases: ["add", "addition"],
-    run:(msg: Message, content: string, splitOnSpace: string[]) => {
+    run: (player: IPlayerDoc, msg: Message, content: string, splitOnSpace: string[]) => {
         msg.channel.send('Welcome to Maths Game')
 
         const a = 1 + Math.floor(Math.random() * 10);

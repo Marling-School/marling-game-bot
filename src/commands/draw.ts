@@ -1,8 +1,9 @@
 import Discord from 'discord.js';
 
-import {CanvasRenderingContext2D, createCanvas} from 'canvas'
+import { CanvasRenderingContext2D, createCanvas } from 'canvas'
 
-import {Command} from "./types";
+import { Command } from "./types";
+import { IPlayerDoc } from '../db/model/player';
 
 const colorArray = [
     '#046975',
@@ -44,7 +45,7 @@ class Circle {
 const draw: Command = {
     description: "Draw some lovely circles",
     aliases: ["draw"],
-    run: (msg: Discord.Message, content: string, splitOnSpace: string[]) => {
+    run: (player: IPlayerDoc, msg: Discord.Message, content: string, splitOnSpace: string[]) => {
         const width = 400
         const height = 400
         const canvas = createCanvas(width, height)

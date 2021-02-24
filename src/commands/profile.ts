@@ -1,28 +1,22 @@
-import {Message, MessageEmbed, MessageReaction, User} from "discord.js";
+import { Message, MessageEmbed, MessageReaction, User } from "discord.js";
 import * as logger from 'winston';
 
-import {IPlayerDoc, Player} from "../db/model/player";
-import {Command} from "./types";
+import { IPlayerDoc, Player } from "../db/model/player";
+import { Command } from "./types";
 
 const profile: Command = {
     description: "View your profile",
     aliases: ["profile", "p"],
-    run: async (msg: Message, content: string, splitOnSpace: string[]) => {
-        // Find the player in the database
-        const player: IPlayerDoc | null = await Player.findById(msg.author.id);
-        if (!player) {
-            msg.channel.send('Player Not Found');
-            return;
-        }
+    run: async (player: IPlayerDoc, msg: Message, content: string, splitOnSpace: string[]) => {
         const profileEmbed = new MessageEmbed()
             .setColor('#0099ff')
             .setTitle(`Adventurer ${player.name} :crossed_swords:`)
             .setDescription('Your Profile')
             .addFields(
-                {name: '❤️ Health', value:` ${player.health}`, inline: true},
-                {name: '🎮 XP', value: `${player.xp} `, inline: true},
-                {name: '🏆 Fights Won', value: `${player.fightsWon} `, inline: true},
-                {name: '☠️ Fights Lost', value: `${player.fightsLost} `, inline: true},
+                { name: '❤️ Health', value: ` ${player.health}`, inline: true },
+                { name: '🎮 XP', value: `${player.xp} `, inline: true },
+                { name: '🏆 Fights Won', value: `${player.fightsWon} `, inline: true },
+                { name: '☠️ Fights Lost', value: `${player.fightsLost} `, inline: true },
             )
             .setTimestamp();
 
@@ -34,13 +28,13 @@ const profile: Command = {
             return ['🎮', '❤️'].includes(reaction.emoji.name) && user.id === msg.author.id;
         };
 
-        sent.awaitReactions(filter, {max: 1, time: 10000, errors: ['time']})
+        sent.awaitReactions(filter, { max: 1, time: 10000, errors: ['time'] })
             .then(async (collected) => {
                 // logic
                 msg.channel.send('You reacted')
             }).catch(() => {
-            logger.warn('Error Awaiting Reactions to Profile Post')
-        });
+                logger.warn('Error Awaiting Reactions to Profile Post')
+            });
     }
 }
 

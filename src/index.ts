@@ -1,13 +1,12 @@
 import * as logger from 'winston'
-import { Client, Message } from 'discord.js';
+import { Client, Message, MessageEmbed } from 'discord.js';
 import dotenv from 'dotenv'
 
-import commands from './commands';
+import commands, { help } from './commands';
 import { connectDb } from "./db/mongoose";
-import BotEnabled from './commands/botEnabled';
 import autoCreatePlayer from './commands/autoCreatePlayer';
-import help from "./commands/help";
 import { Command, Optional } from './commands/types';
+import { IPlayerDoc } from './db/model/player';
 
 // Load environment variables
 dotenv.config();
@@ -28,12 +27,10 @@ client.on('ready', () => {
     logger.info(`Logged in as ${client.user && client.user.tag}!`);
 });
 
-const SIGNAL = '>'
+const DEFAULT_COMMAND_PREFIX = '>'
 
-const botEnabled = new BotEnabled();
-
-client.on('message', (msg: Message) => {
-    if (!msg.content.startsWith(SIGNAL)) return
+client.on('message', async (msg: Message) => {
+    if (!msg.content.startsWith(process.env.COMMAND_PREFIX || DEFAULT_COMMAND_PREFIX)) return
     if (msg.author.bot) return;
 
     logger.info(`Saw a Message: ${msg.content}`);
@@ -41,16 +38,13 @@ client.on('message', (msg: Message) => {
     const message = msg.content.slice(1);
     const parts = message.split(' ');
 
-    // Prevent any further processing if the bot is disabled
-    if (!botEnabled.isEnabled(msg, message, parts)) return;
-
     // Ensure player exists
-    autoCreatePlayer(msg);
+    const player: IPlayerDoc = await autoCreatePlayer(msg);
 
     if (parts.length > 0) {
         // Manual check for help command to avoid cyclic import
         if (parts[0].toLocaleLowerCase() === "help") {
-            help.run(msg, msg.content, parts)
+            msg.channel.send(help)
             return;
         }
 
@@ -61,7 +55,7 @@ client.on('message', (msg: Message) => {
             return;
         }
 
-        command.run(msg, msg.content, parts)
+        command.run(player, msg, msg.content, parts)
 
     } else {
         msg.channel.send('Error - Not enough parts when split on space');
