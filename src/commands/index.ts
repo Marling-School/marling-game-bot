@@ -1,6 +1,7 @@
 import draw from './draw';
 import fightMonster from './fightMonster';
 import guessNumber from './guessNumber';
+import numberBaseQuiz from './numberBaseQuiz';
 import addition from './addition';
 import profile from './profile';
 import { Command } from './types';
@@ -8,7 +9,7 @@ import { MessageEmbed } from 'discord.js';
 
 
 const commands: Command[] = [
-    draw, profile, addition, fightMonster, guessNumber
+    draw, profile, addition, fightMonster, guessNumber, numberBaseQuiz
 ];
 
 const help: MessageEmbed = new MessageEmbed()
