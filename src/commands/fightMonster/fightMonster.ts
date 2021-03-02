@@ -1,41 +1,11 @@
-import { Message, MessageEmbed, MessageReaction, User } from "discord.js";
+import { Message, MessageReaction, User } from "discord.js";
 
 import { Command } from "../types";
 
 import { IPlayerDoc, Player } from "../../db/model/player";
-import Fight, { FightStatus } from "./Fight";
-import winston from "winston";
-
-export const Emoji = {
-    controller: '🎮',
-    heart: '❤️',
-    crossedSwords: '⚔️',
-    shield: '🛡️',
-    flee: '🏃‍♂️',
-    j: '🇯'
-}
-
-const logger = winston.createLogger()
-
+import Fight, { FightStatus, Emoji } from "./Fight";
 
 const ACTION_EMOJIS = [Emoji.crossedSwords, Emoji.shield, Emoji.flee, Emoji.j];
-
-function createFightEmbed({ players, monster, events }: Fight): MessageEmbed {
-    const embed = new MessageEmbed()
-        .setColor('#0099ff')
-        .setTitle(`Fight} :crossed_swords:`)
-        .setDescription(`Fighting a ${monster.name}`)
-
-    players.forEach(player => {
-        embed.addField(player.name, `${Emoji.heart}:${player.health}, ${Emoji.controller}: ${player.xp}`)
-    })
-
-    embed.addField(monster.name, `${Emoji.heart}: ${monster.health}, ${Emoji.crossedSwords}: ${monster.strikeProbability * 100}%`)
-        .addField('Events', events.join('\n'))
-        .setTimestamp();
-
-    return embed
-}
 
 const fightMonster: Command = {
     description: "Fight a Monster",
@@ -43,12 +13,12 @@ const fightMonster: Command = {
     run: async (firstPlayer: IPlayerDoc, msg: Message, content: string, splitOnSpace: string[]) => {
         const fight = new Fight(firstPlayer);
 
-        const fightMessage: Message = await msg.channel.send(createFightEmbed(fight));
+        const fightMessage: Message = await msg.channel.send(fight.createFightEmbed());
         ACTION_EMOJIS.forEach(async r => await fightMessage.react(r));
 
         // Watch the reactions
         const filter = (reaction: MessageReaction, user: User) => {
-            return ACTION_EMOJIS.includes(reaction.emoji.name);
+            return ACTION_EMOJIS.includes(reaction.emoji.name) && !user.bot;
         };
 
         const collector = fightMessage.createReactionCollector(filter, { time: 150000 });
@@ -94,7 +64,7 @@ const fightMonster: Command = {
                 }
             }
 
-            fightMessage.edit(createFightEmbed(fight));
+            fightMessage.edit(fight.createFightEmbed());
 
             return true;
         });

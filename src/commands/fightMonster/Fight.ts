@@ -1,6 +1,15 @@
-import {IPlayerDoc} from "../../db/model/player";
-import {choose, takeChance} from "../../utils";
-import winston from "winston";
+import { IPlayerDoc } from "../../db/model/player";
+import { choose, takeChance } from "../../utils";
+import { MessageEmbed } from "discord.js";
+
+export const Emoji = {
+    controller: '🎮',
+    heart: '❤️',
+    crossedSwords: '⚔️',
+    shield: '🛡️',
+    flee: '🏃‍♂️',
+    j: '🇯'
+}
 
 export interface IMonster {
     name: string;
@@ -140,14 +149,14 @@ export default class Fight {
         if (alivePlayers.length === 0) {
             this.addEvent(`Monster has won by killing all players, Player Respawns with ${PLAYER_RESPAWN_HEALTH} HP`);
             this.players.forEach(player => player.health = PLAYER_RESPAWN_HEALTH);
-            this.players.forEach(p=>p.fightsLost=p.fightsLost?p.fightsLost+1:1)
+            this.players.forEach(p => p.fightsLost = p.fightsLost ? p.fightsLost + 1 : 1)
             return FightStatus.MonsterWon;
         } else if (this.monster.health <= 0) {
             this.monster.health = 0;
             const xp = (10 * this.turnNumber);
             this.players.forEach(player => player.xp += xp);
             this.addEvent(`The Players have Killed the Monster gaining ${xp} XP each`);
-            this.players.forEach(p=>p.fightsWon=p.fightsWon?p.fightsWon+1:1)
+            this.players.forEach(p => p.fightsWon = p.fightsWon ? p.fightsWon + 1 : 1)
             return FightStatus.PlayerWon;
         } else if (this.hasFled) {
             return FightStatus.PlayerFlee;
@@ -166,5 +175,22 @@ export default class Fight {
                 this.players.splice(i, 1)
             }
         })
+    }
+
+    createFightEmbed(): MessageEmbed {
+        const embed = new MessageEmbed()
+            .setColor('#0099ff')
+            .setTitle(`Fight} :crossed_swords:`)
+            .setDescription(`Fighting a ${this.monster.name}`)
+
+        this.players.forEach(player => {
+            embed.addField(player.name, `${Emoji.heart}:${player.health}, ${Emoji.controller}: ${player.xp}`)
+        })
+
+        embed.addField(this.monster.name, `${Emoji.heart}: ${this.monster.health}, ${Emoji.crossedSwords}: ${this.monster.strikeProbability * 100}%`)
+            .addField('Events', this.events.join('\n'))
+            .setTimestamp();
+
+        return embed
     }
 }
