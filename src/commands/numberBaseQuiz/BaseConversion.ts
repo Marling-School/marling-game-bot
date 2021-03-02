@@ -28,7 +28,7 @@ export default class BaseConversion {
         const embed = new MessageEmbed()
             .setColor(this.isFinished() ? (this.isCorrect() ? 'green' : 'red') : 'blue')
             .setDescription(`Convert ${this.from.name} ${this.presentedDigits.join('')} to ${this.to.name}`)
-            .addField("Your Answer", `${this.playerDigits.join('').padStart(this.to.padding, '-')}`)
+            .addField("Your Answer", `=${this.playerDigits.join('').padStart(this.to.padding, '-')}`)
             .setFooter('Use Reactions to select digits, starting from LSD and working up');
 
         return embed;
