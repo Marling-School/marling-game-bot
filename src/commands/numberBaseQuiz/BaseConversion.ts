@@ -1,5 +1,5 @@
 import { MessageEmbed } from "discord.js";
-import NumberBase from "./NumberBase";
+import { NumberBase } from "comp-sci-maths-lib";
 
 export default class BaseConversion {
     value: number;
@@ -14,9 +14,9 @@ export default class BaseConversion {
 
         this.from = from;
         this.to = to;
-        this.presentedDigits = from.toString(this.value);
+        this.presentedDigits = from.toDigits(this.value);
         this.playerDigits = [];
-        this.correctDigits = to.toString(this.value);
+        this.correctDigits = to.toDigits(this.value);
     }
 
     enterDigit(reactionEmoji: string) {

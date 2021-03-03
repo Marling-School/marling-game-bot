@@ -3,7 +3,7 @@ import { IPlayerDoc } from "../../db/model/player";
 import { choose } from "../../utils";
 import { Command } from "../types";
 import BaseConversion from "./BaseConversion";
-import { binary, denary, hexadecimal } from "./NumberBase";
+import { binary, denary, hexadecimal } from "comp-sci-maths-lib";
 
 const MAX_VALUE: number = 255;
 
